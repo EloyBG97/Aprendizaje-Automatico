@@ -88,3 +88,33 @@ length(Carseats[is.na(Carseats)])
 
 dim(Hitters)
 length(Hitters[is.na(Hitters)])
+
+#Ejercicio 1.20 Rellena la matriz siguiente mm
+m <- matrix(1:16, nrow = 4, ncol = 4)
+
+m[1,]
+m[(1:min(d)-1)*min(d) + 1:min(d)]
+
+#Ejercicio 1.21 Cambie el valor de la esquina superior izda a -1 y los valores de la tercera fila a 1.
+m[1] = -1;
+m[3,] <- 1
+m
+
+#Ejercicio 1.22 Comprueba que hace este código
+rr= matrix(rep(1:4,each=2),ncol=2, byrow=T)
+mm[rr]
+
+#Ejercicio 1.23 Asigne el valor -2 a la diagonal principal de la matriz a.
+rr <- matrix(rep(1:4,each), ncol=2, byrow = T)
+m[rr] <- -2
+m
+
+#Ejercicio 1.24 Dado una matriz cuadrada inicializada al valor de la fila, se quiere poner a 0 los
+#elementos (1,3) (2,2) y (3,1).
+n = 4
+m <- matrix(nrow = n, ncol = n, byrow = T, data =  rep(1:n,each = n))
+m
+
+r <- matrix(c(1, 3, 2, 2, 3, 2), nrow = 3, ncol = 2, byrow = T)
+m[r] <- 0
+m
