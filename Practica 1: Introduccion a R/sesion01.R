@@ -1,13 +1,13 @@
 echo = T
 
 print("Ejercicio 1.1 Muestre el lanzamiento de 1 dado (de 6 caras).")
-sample(6,1,replace=T)
+sample(6,1,T)
 
 print("Ejercicio 1.2 Muestre 10 lanzamientos de 1 dado.")
-sample(6,10,replace = T)
+sample(6,10,T)
 
 print("Ejercicio 1.3 Muestre el lanzamiento de 2 dados.")
-sample(6,2)
+sample(rep(1:6,2), 2, T, rep(1/6,12))
 
 print("Ejercicio 1.4 Cargue el paquete ISLR, consulte la lista de datasets que contiene. Consulte la \
 descripción de los datos Auto, Carseats y Hitters. Idem sobre el dataset Boston, ubicado dentro de \
@@ -28,8 +28,8 @@ class(x)
 
 print("Ejercicio 1.8 Cómo reproducir mediante algunas de las funciones vistas los siguientes vectores: ")
 rep(1:4,4)
-rep(1:4,c(4,4,4,4))
-rep(1:5,c(1,2,3,4,5))
+rep(4:1, each = 4)
+rep(1:5,1:5)
 
 print("Ejercicio 1.9 Estima las longitudes resultantes de las operaciones siguientes: ")
 x <- 0:10
@@ -45,7 +45,8 @@ mean(x)
 s <- sqrt(x)
 x[x > s]
 length(x[x > 1])
-round(s,2)
+s1 <- round(s,2)
+s - s1
 
 print("Ejercicio 1.11 Deje ordenado x en orden decreciente.")
 sort(x, decreasing = T)
@@ -54,19 +55,23 @@ print("Ejercicio 1.12 Calcule la media del vector x, usando sum() y length().")
 sum(x)/length(x)
 
 print("Ejercicio 1.13 Simule el 10 lanzamientos de 2 dados. Los lanzamientos son independientes.")
-x <- seq(3, 15, by = 2)
-y <- seq(2, 14, by = 2)
+sample(rep(1:6,2), 20, T, rep(1/6,12))
 
-s <- x + 6
+print("Ejercicio 1.14: al vector x se le suma la cantidad 6 a todos los componentes, realizar la suma, resta y multipli-
+cación de los 2 vectores")
+x <- c(3, 5, 7, 9, 11, 13, 15)
+y <- c(2, 4, 6, 8, 10, 12, 14)
 
-s1 <- s + y
-s2 <- s - y
-s3 <- s * y
-s4 <- s / y
+x <- x + 6
+
+x + y
+x - y
+x * y
 
 print("Ejercicio 1.15 Dado un vector de puntuaciones se han de quitar los valores extremos")
-x <- c(1,2,3,4,5,6,7,8,9)
+x <- c(1, 5, 3, 64, 77, 4, 9, 2, 6, 36, 7, 5)
 x[x < max(x) & x > min(x)]
+#x[range(x) != x]
 
 print("Ejercicio 1.16 Dado un vector de x = c(1:4,NA,6:8,NA). Sustituir los valores perdidos por la media \
 del vector.")
