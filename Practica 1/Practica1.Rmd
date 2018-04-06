@@ -1,0 +1,574 @@
+---
+title: 'Práctica 1: Aprendizaje Automático'
+author: "Eloy Bedia García & Miguel Moles Hurtado"
+date: "10 de Marzo de 2018"
+output:
+  pdf_document: default
+subtitle: 1. Ejercicios sobre la búsqueda iterativa de óptimos
+---
+
+\section{APARTADO 1}
+**EJERCICIO 1**
+
+1. Implementar el algoritmo de gradiente descendente.
+
+$var \leftarrow Punto_{inicio}$
+
+$f: \Re^n \rightarrow \Re$
+
+$fderivadas \leftarrow (\frac{\partial f}{\partial x_{0}},...,\frac{\partial f}{\partial x_{i}},...,\frac{\partial f}{\partial x_{n}})$
+
+$\eta \leftarrow Tasa_{aprendizaje}$
+
+Sea $a \in \Re^n$ el anterior punto evaluado segun BGD, $\epsilon \in \Re \mid |f(x) - f(a)| \ge \epsilon$
+
+$limit \leftarrow Max_{iteraciones}$
+
+``` {r}
+BatchGradientDescent = function(var, f, fderivadas, mu, epsilon = -Inf, limit = Inf) {
+  #el vector 'y' sera utilizado para almacenar las nuevas componentes
+  #Si las guardaramos directamente en 'var' alterariamos el punto a evaluar en ese momento.
+  y <- var
+  dim(y) <- dim(var)
+  iteraciones <- 0
+
+  eval_anterior <- Inf
+  while(iteraciones < limit && abs(eval_anterior - eval(f)) >= epsilon)  {
+    
+    #Recorremos cada una de las componentes independientes de la funcion
+    #Para cada componente de la funcion hay una derivada parcial
+    for(i in 1:dim(var)) {
+      #Evaluamos la derivada en el punto 'var' y seguimos el sentido negativo de la misma
+      #Si eval(fderivada[i]) < 0 la variable 'var[i]' aumentara siguiendo el sentido negativo
+      #Si eval(fderivada[i]) > 0 la variable 'var[i]' disminuira siguiendo el sentido negativo
+      #Si eval(fderivada[i]) = 0 la variable 'var[i]' habra llegado a su valor optimo
+      y[i] <- var[i] - mu * eval(fderivadas[i])
+    }
+
+    eval_anterior <- eval(f)
+    #Actualizamos el punto que evaluaremos
+    var <- y
+    iteraciones <- iteraciones + 1
+    
+  }
+  
+  list(y,iteraciones)
+}
+```
+
+\newpage
+
+
+**EJERCICIO 2**
+
+2. Considerar la función $f(u,v) = (u^{3}e^{v-2} - 4v^{3}e^{-u})^{2}$. Usar gradiente descendente para encontrar un mínimo de esta función, comenzando desde el punto $(u, v) = (1, 1)$ y usando una tasa de aprendizaje $\eta = 0,05$.
+
+``` {r echo=FALSE}
+var <- c(0,0)
+dim(var) <- 2
+f <- expression( ( (var[1] ** 3) * (exp(var[2] - 2) )  - 4 * (var[2] ** 3) * exp(-var[1]) ) ** 2 )
+fu <- expression(2 *  (var[1] ** 3 * exp(var[2] - 2) - 4*exp(-var[1])*var[2]**3) * (3*var[1]**2 * exp(var[2] - 2) + 4*exp(-var[1])*var[2]**3))
+fv <- expression(2 * (var[1] ** 3 * exp(var[2] - 2) - 4*exp(-var[1])*var[2]**3) * (var[1] ** 3 * exp(var[2] - 2)  - 12*exp(-var[1])*var[2]  ** 2))
+fderivadas <- c(fu,fv)
+```
+
+``` {r echo = FALSE}
+BatchGradientDescentM = function(var, f, fderivadas, mu, epsilon = -Inf, limit = Inf, minimo_alcanzable) {
+  #el vector 'y' sera utilizado para almacenar las nuevas componentes
+  #Si las guardaramos directamente en 'var' alterariamos el punto a evaluar en ese momento.
+  y <- var
+  dim(y) <- dim(var)
+  iteraciones <- 0
+
+  eval_anterior <- Inf
+  while(iteraciones < limit && abs(eval_anterior - eval(f)) >= epsilon && eval(f) > minimo_alcanzable)  {
+    
+    #Recorremos cada una de las componentes independientes de la funcion
+    #Para cada componente de la funcion hay una derivada parcial
+    for(i in 1:dim(var)) {
+      #Evaluamos la derivada en el punto 'var' y seguimos el sentido negativo de la misma
+      #Si eval(fderivada[i]) < 0 la variable 'var[i]' aumentara siguiendo el sentido negativo
+      #Si eval(fderivada[i]) > 0 la variable 'var[i]' disminuira siguiendo el sentido negativo
+      #Si eval(fderivada[i]) = 0 la variable 'var[i]' habra llegado a su valor optimo, por tanto no se alterara
+      y[i] <- var[i] - mu * eval(fderivadas[i])
+    }
+
+    eval_anterior <- eval(f)
+    #Actualizamos el punto que evaluaremos
+    var <- y
+    iteraciones <- iteraciones + 1
+    
+  }
+  
+  list(y,iteraciones)
+}
+
+var <- c(1,1)
+dim(var) <- 2
+mu <- 0.05
+minimo <- 10e-14
+
+res <- BatchGradientDescentM(var, f, fderivadas, mu, minimo_alcanzable = minimo)
+punto <- res[[1]]
+iteraciones <- res[[2]]
+```
+
+\hspace{1cm} a) Calcular analíticamente y mostrar la expresión del gradiente de la función $f(u,v)$
+
+$\nabla f = (\frac{\partial (u^{3}e^{v-2} - 4v^{3}e^{-u})^{2}}{\partial u}, \frac{\partial (u^{3}e^{v-2} - 4v^{3}e^{-u})^{2}}{\partial v})$
+
+$\nabla f = (2 ( u^{3} e^{v - 2}  - 4 v^{3} e^{-u} ) ( 3u^{2} e^{v - 2}  + 4 v^{3} e^{-u} ), 2 ( u^{3} e^{v - 2}  - 4 v^{3} e^{-u} ) (u^{3}e^{v-2} - 12v^{2}e^{-u}))$
+
+\vspace{1.5cm}
+
+\hspace{1cm} b) Cuántas iteraciones tarda el algoritmo en obtener por primera vez un valor de $f(u,v)$ inferior a $10^{-14}$ .
+``` {r echo = FALSE}
+cat("Para alcanzar el minimo de la función f, el algoritmo utilizado invierte ", iteraciones, " iteraciones")
+```
+
+\vspace{1.5cm}
+
+\hspace{1cm} c) ¿En qué coordenadas $(u, v)$ se alcanzó por primera vez un valor igual o menor a $10^{-14}$  en el apartado anterior.
+``` {r echo = FALSE}
+var <- punto
+cat("En el punto (",punto[1],",",punto[2],"). El valor f(u,v) en ese punto es ",eval(f))
+```
+
+\newpage
+
+**EJERCICIO 3**
+
+3. Considerar ahora la función $f(x,y) = (x-2)^{2} + 2(y+2)^{2} + 2sin(2\pi x)sin(2\pi y)$
+
+```{r echo=FALSE}
+var <- c(0,0)
+dim(var) <- 2
+f <- expression((var[1] - 2) **2 + 2 *(var[2] + 2) ** 2 + 2 * sin(2 *pi * var[1]) * sin(2 * pi * var[2]))
+fu <- expression(2 * (var[1] - 2) + 2 * sin(2 * pi * var[2]) * cos(2 * pi * var[1]) * 2 * pi)
+fv <- expression(4 * (var[2] + 2) + 2 * sin(2 * pi * var[1]) * cos(2 * pi * var[2]) * 2 * pi)
+fderivadas <- c(fu,fv)
+```
+
+\hspace{1cm} a) Usar gradiente descendente para minimizar esta función. Usar como punto inicial $(x_{0} = 1, y_{0} = 1)$, tasa de aprendizaje $\eta = 0.01$ y un máximo de 50 iteraciones. Generar un gráfico de cómo desciende el valor de la función con las iteraciones. Repetir el experimento pero usando $\eta = 0,1$, comentar las diferencias y su dependencia de $\eta$.
+
+``` {r include = FALSE}
+BatchGradientDescentG = function(var, f, fderivadas, mu, epsilon = -Inf, limit = Inf) {
+  y <- var
+  dim(y) <- dim(var)
+
+  iteraciones <- 0
+  eval_anterior <- Inf
+  grafico <- matrix(c(iteraciones,eval(f)), nrow = 1, ncol = 2, byrow = T)
+  
+  while(iteraciones < limit && abs(eval_anterior - eval(f)) >= epsilon)  {
+    for(i in 1:dim(var)) {
+      y[i] <- var[i] - mu * eval(fderivadas[i])
+    }
+
+    eval_anterior <- eval(f)
+
+    var <- y
+    
+    grafico <- rbind(grafico, c(iteraciones,eval(f)))
+    iteraciones <- iteraciones + 1
+  }
+  
+  list(y,iteraciones,grafico)
+}
+```
+
+1º Experimento: Aplicamos el gradiente descendente con $\eta = 0.01$
+
+``` {r echo=FALSE}
+var <- c(1,1)
+dim(var) <- 2
+mu <- 0.01
+limit <- 50
+
+res <- BatchGradientDescentG(var, f, fderivadas, mu, limit = 50)
+
+graficos <- res[[3]]
+
+plot(graficos, xlab = "Iteraciones", ylab = "Valor")
+```
+
+2º Experimento: Aplicamos el gradiente descendente con $\eta = 0.1$
+
+``` {r echo=FALSE}
+var <- c(1,1)
+dim(var) <- 2
+mu <- 0.1
+epsilon <- Inf
+
+res <- BatchGradientDescentG(var, f, fderivadas, mu, limit = 50)
+punto <- res[[1]]
+
+graficos <- res[[3]]
+
+plot(graficos, xlab = "Iteraciones", ylab = "Valor")
+```
+
+La única diferencia entre ambos experimentos ha sido el valor $\eta$, sin embargo, con esta alteración podemos observar que el primero a conseguido alcanzar el valor mínimo posible, por el contrario, el segundo ha estado lejos de conseguirlo.
+
+El valor $f(u,v)$ en el segundo experimento podemos ver que ha estado aproximadamente en el intervalo $(-1,7)$.
+
+Recordemos que $\eta$ es un factor multiplicativo que condiciona el incremento (o decremento) de la variable independiente.
+
+El segundo experimento tenía una tasa de aprendizaje ($\eta$) con valor $0,1$. Con lo dicho anteriormente, podemos deducir que el valor $f(u,v)$ ha estado oscilando entorno al mínimo debido a su alta tasa de aprendizaje. Es decir, cuando estaba cerca del mínimo (tanto en sentido positivo como negativo) debido a su tasa de aprendizaje incrementabamos (o decrementabamos) demasiado el valor de la variable independiente, por lo que en vez de llegar al valor del mínimo, pasabamos al otro lado del mismo. Este proceso se ha repetido numerosas veces y por eso su grafica muestra tantos picos.
+
+En el caso del $1^{er}$ experimento, la tasa de aprendizaje era adecuada y por ello en ningún momento hemos oscilado entorno al mínimo.
+
+\vspace{1.5cm}
+
+
+\hspace{1cm} b)  Obtener el valor mínimo y los valores de las variables (x, y) en donde se alcanzan cuando el punto de inicio se fija: $(2,1, -2,1)$, $(3, -3)$, $(1,5, 1,5)$, $(1, -1)$. Generar una tabla con los valores obtenidos
+
+```{r echo=FALSE}
+mu <- 0.01
+epsilon <- 10**-2
+
+
+var <- c(2.1,-2.1)
+dim(var) <- 2
+
+res <- BatchGradientDescent(var, f, fderivadas, mu, epsilon)
+var <- res[[1]]
+resultados <- matrix(c(var[1],var[2],eval(f)), ncol = 3, byrow = T)
+
+
+var <- c(3,-3)
+dim(var) <- 2
+
+res <- BatchGradientDescent(var, f, fderivadas, mu, epsilon)
+var <- res[[1]]
+resultados <- rbind(resultados, c(var[1],var[2],eval(f)))
+
+
+var <- c(1.5,1.5)
+dim(var) <- 2
+
+res <- BatchGradientDescent(var, f, fderivadas, mu, epsilon)
+var <- res[[1]]
+resultados <- rbind(resultados, c(var[1],var[2],eval(f)))
+
+
+var <- c(1,-1)
+dim(var) <- 2
+
+res <- BatchGradientDescent(var, f, fderivadas, mu, epsilon)
+var <- res[[1]]
+resultados <- rbind(resultados, c(var[1],var[2],eval(f)))
+
+dimnames(resultados) <- list(c("P(2.1,-2.1)", "P(3,-3)", "P(1.5,1.5)", "P(1,-1)"),c("X","Y","Z"))
+
+print(resultados)
+```
+
+\newpage
+
+**EJERCICIO 4**
+
+4. ¿Cuál sería su conclusión sobre la verdadera dificultad de encontrar el mínimo global de una función arbitraria?
+
+a) Encontrar un punto de inicio que te permita llegar al óptimo global sin quedar atascado en óptimos locales.
+b) Encontrar una tasa de aprendizaje  que sea lo suficientemente buena como para encontrar el óptimo rapidamente pero sin llegar a oscilar entorno a él.
+c) Encontrar un criterio de parada fiable
+
+
+
+\newpage
+\section{APARTADO 2}
+
+Este ejercicio ajusta modelos de regresión a vectores de características extraidos de imágenes de digitos manuscritos. En particular se extraen dos característcas concretas: el valor medio del nivel de gris y simetría del número respecto de su eje vertical. Solo se seleccionarán para este ejercicio las imágenes de los números 1 y 5.
+
+
+```{r echo=FALSE}
+#   Esta función se encarga de generar una lista de matrices de 16*16, que contiene cada una
+#   un numero (representado por su escala de grises).
+generarLista <- function(D){
+	nDatos <- length(D$V1)
+	lista <- list()
+	for(i in 1:nDatos){
+		matrizActual <- D[i,]
+		lista[[i]] <- matrix(as.numeric(matrizActual[2:257]), nrow=16, ncol=16)
+	}
+	lista
+}
+
+#   Esta función se encarga de calcular la simetría de una matriz
+fSimetria <- function(A){
+  A = abs(A-A[,ncol(A):1])
+  -sum(A)
+}
+
+#   Esta función se encarga de calcular la intensidad de una matriz utilizando la función
+#   mean()
+fIntensidad <- function(M){
+	mean(M)
+}
+
+# Esta función sirve para generar una recta a partir de un vector de 3 pesos
+pasoARecta= function(w){
+      if(length(w)!= 3)
+        stop("Solo tiene sentido con 3 pesos")
+      a = -w[2]/w[3]
+      b = -w[1]/w[3]
+      c(a,b)
+}
+```
+
+**EJERCICIO 1**
+
+
+
+1. Estimar un modelo de regresión lineal a partir de los datos proporcionados de dichos números $(Intensidad\_promedio, Simetria)$ usando tanto el algoritmo de la pseudo-inversa como Gradiente descendente estocástico ($SGD$). Las etiquetas serán $\{-1, 1\}$, una para cada vector de cada uno de los números. Pintar las soluciones obtenidas junto con los datos usados en el ajuste. Valorar la bondad del resultado usando $E_{in}$ y $E_{out}$ (para $E_{out}$ calcular las predicciones usando los datos del fichero de test). (usar $Regress\_Lin(datos, label)$ como llamada para la función (opcional)).
+```{r echo=FALSE, warning=FALSE}
+#   Esta función calcula la matriz inversa de una matriz que se le pase como argumento
+#   utiliza la función svd(), y dado que M = X*X^t, por lo que es una matriz simétrica,
+#   M = U*S*V^t, donde:
+#   - U es una matriz cuyas columnas son los vectores propios de M*M^t
+#   - S es una matriz diagonal cuyos elementos son los valores propios de M
+#   - V es una matriz cuyas columnas son los vectores propios de M^t*M
+#   Por tanto, M⁻¹ = (U*S*V^t)⁻¹ = V*S⁻¹*U^t
+invertirMatrizSVD <- function(M){
+	svdDesc <- svd(M)
+	sInvCoef <- 1/(svdDesc$d)
+	sInv <- diag(x=sInvCoef, nrow=nrow(M), ncol=ncol(M))
+	V <- matrix(svdDesc$v, nrow=nrow(M))
+	U <- matrix(svdDesc$u, nrow=nrow(M))
+	mInv <- V %*% sInv %*% t(U)
+	mInv
+}
+
+# Esta función sirve para calcular una recta de regresión, que funciona cuando el conjunto de datos es separable
+Regress_Lin <- function(datos, label){
+	X <- datos
+	# En H se calcula la matriz hat de los datos pasados como parámetro
+	H <- (invertirMatrizSVD(t(X) %*% X) %*% t(X))
+	
+	# Usando la matriz hat calculada anteriormente, se calculan los pesos utilizando las etiquetas pasadas como parámetro
+	w <- H %*% t(matrix(label, nrow=1))
+	
+	# También se calcula el error obtenido, de forma matricial
+	Error <- (1/length(label))*norm(datos%*%w-label)**2
+	
+	sol <- list()
+	sol[[1]]<-pasoARecta(w)
+	sol[[2]]<-Error
+	sol[[3]]<-w
+	sol
+}
+
+# Esta función utiliza gradiente descendente estocástico (SGD) para calcular un vector de pesos a partir de unos datos y etiquetas, minimizando el error obtenido tras cada iteración
+Logistic_Reg <- function(w, x, y, N, mu, epsilon=10e-10){
+  prev_w <- c(0,0,0)
+  Error <- 1.0
+  iter <- 1
+  while(Error >= epsilon && iter < 10000000){
+    TrainingIndex <- sample(1:length(y), N)
+    TrainingDataPoints <- x[TrainingIndex,]
+    TrainingLabelValues <- y[TrainingIndex]
+    prev_w <- w
+    
+    Gradient <- (-TrainingLabelValues*TrainingDataPoints)/c(1+exp(TrainingLabelValues*TrainingDataPoints%*%w))
+    
+    w <- w - mu*(1/N)*colSums(Gradient)
+    Error <- colSums(log(1+ exp(-TrainingLabelValues*TrainingDataPoints%*%w)))
+    iter <- iter+1
+  }
+	sol <- list()
+	sol[[1]] <- pasoARecta(w)
+	sol[[2]] <- Error
+	sol
+}
+# Se cambia el directorio de trabajo, y se carga en una variable el fichero zip.train, del que se va a obtener la matriz de 1 y 5
+setwd("./datos")
+digit.train <- read.table("zip.train", quote="\"", comment.char="", stringsAsFactors=FALSE)
+digitos15.train <- digit.train[digit.train$V1==1 | digit.train$V1==5,]
+lista15 <- generarLista(digitos15.train)
+
+#   Se crea un vector de simetrías, que se obtienen al utilizar la funcion fsimetria
+vSimetrias <- c()
+for(i in 1:length(lista15)){
+  vSimetrias[i] <- fSimetria(lista15[[i]])
+}
+
+#   Se crea un vector de simetrias, que se obtienen al utilizar la función fintensidad
+vIntensidades <- c()
+for(i in 1:length(lista15)){
+  vIntensidades[i] <- fIntensidad(lista15[[i]])
+}
+
+#   Se obtienen las etiquetas de los 1 y 5, modificando la de 1 a -1 y la de 5 a 1, para poder utilizar la regresion lineal
+#   Con las simetrias e intensidades se crea la matriz de datos, y se calcula la regresion lineal con esta matriz y las etiquetas
+#   Antes de llamar a la función, es necesario añadir una columna de 1s a la matriz datos
+vEtiquetas <- digitos15.train$V1
+vEtiquetas[vEtiquetas==5] <- -1
+datos <- matrix(c(rep(1, length(vIntensidades)),vIntensidades, vSimetrias), ncol = 3)
+w <- Regress_Lin(datos, vEtiquetas)
+plot ( x=vIntensidades, y=vSimetrias, col=vEtiquetas+3, xlab="Intensidad", ylab= "Simetria")
+curve (w[[1]][1]*x + w[[1]][2], add=T )
+w1=c(0,0,0)
+dim(w1) <- 3
+
+#   Con gradiente descendente estocástico (SGD) obtenemos el valor de Ein y otro vector de pesos
+wSGD <- Logistic_Reg(w1, datos, vEtiquetas, 50, mu=0.05)
+plot ( x=vIntensidades, y=vSimetrias, col=vEtiquetas+3, xlab="Intensidad", ylab= "Simetria")
+curve (wSGD[[1]][1]*x + wSGD[[1]][2], add=T )
+Ein <- w[[2]]
+
+
+cat("Ein vale ",Ein,"\n")
+
+#   Ahora se calcula Eout utilizando los datos del archivo zip.test, siguiendo los pasos realizados anteriormente con zip.train
+digit.test <- read.table("zip.test", quote="\"", comment.char="", stringsAsFactors=FALSE)
+digitos15.test <- digit.test[digit.test$V1==1 | digit.test$V1==5,]
+lista15.test <- generarLista(digitos15.test)
+
+vSimetrias <- c()
+for(i in 1:length(lista15.test)){
+  vSimetrias[i] <- fSimetria(lista15.test[[i]])
+}
+
+vIntensidades <- c()
+for(i in 1:length(lista15.test)){
+  vIntensidades[i] <- fIntensidad(lista15.test[[i]])
+}
+
+vEtiquetas <- digitos15.test$V1
+vEtiquetas[vEtiquetas==5] <- -1
+datos <- matrix(c(rep(1, length(vIntensidades)),vIntensidades, vSimetrias), ncol = 3)
+
+Eout <- 1/length(vEtiquetas)*norm(datos%*%w[[3]]-vEtiquetas)**2
+
+
+cat("Eout vale ", Eout)
+
+```
+\newpage
+
+*** EJERCICIO 2***
+
+2. En este apartado exploramos como se transforman los errores $E_{in}$ y $E_{out}$ cuando aumentamos la complejidad del modelo lineal usado. Ahora hacemos uso de la función $simula\_unif(N, 2, size)$ que nos devuelve $N$ coordenadas $2D$ de puntos uniformemente muestreados dentro del cuadrado definido por $[-size, size]$x$ [-size, size]$
+
+EXPERIMENTO
+
+a) Generar una muestra de entrenamiento de $N = 1000$ puntos en el cuadrado $\chi = [-1, 1]$x$[-1, 1]$. Pintar el mapa de puntos $2D$. (ver función de ayuda)
+
+
+```{r echo=FALSE}
+#  Función que calcula N coordenadas uniformemente muestreadas dentro del cuadrado definido por rango
+simula_unif = function (N=2,dims=2, rango = c(0,1)){
+ m = matrix(runif(N*dims, min=rango[1], max=rango[2]),
+ nrow = N, ncol=dims, byrow=T)
+ m
+}
+
+set.seed(3)
+muestra <- simula_unif(N=1000,rango=c(-1,1))
+
+plot ( x=muestra[,1], y=muestra[,2])
+```
+\newpage
+
+b) Consideremos la función $f(x_{1},x_{2}) = sign((x_{1} - 0,2)^{2} + x_{2}^{2} - 0,6)$ que usaremos para asignar una etiqueta a cada punto de la muestra anterior. Introducimos ruido sobre las etiquetas cambiando aleatoriamente el signo de un $10 \%$ de las mismas. Pintar el mapa de etiquetas obtenido.
+
+```{r echo=FALSE}
+#   Función utilizada para etiquetar la muestra obtenida en el ejercicio anterior
+f <- function(x1, x2){
+  s <- ((x1-0.2)**2 + x2**2- 0.6)
+  if(s == abs(s)) return(1)
+  return(-1)
+}
+
+#   Se provoca que un 10% de las etiquetas se modifiquen, para generar ruido en la muestra obtenida
+indiceRuido <-sample(1:1000, 1000*0.1)
+etiquetasMuestra <- c()
+for(i in 1:length(muestra[,1]))
+  etiquetasMuestra[i] <- f(muestra[i,1], muestra[i,2])
+
+for(i in 1:length(indiceRuido)){
+  if((etiquetasMuestra[indiceRuido[i]]) == 1){
+    etiquetasMuestra[indiceRuido[i]] <- -1
+  } else{
+    etiquetasMuestra[indiceRuido[i]] <- 1
+  }
+}
+
+plot ( x=muestra[,1], y=muestra[,2], col=etiquetasMuestra+3)
+```
+
+c) Usando como vector de características $(1,x_{1},x_{2})$ ajustar un modelo de regresion lineal al conjunto de datos generado y estimar los pesos $\omega$. Estimar el error de ajuste $E_{in}$ usando Gradiente Descendente Estocástico $(SGD)$.
+
+
+```{r echo=FALSE}
+datos <- matrix(c(rep(1, length(muestra[,1])), muestra[,1], muestra[,2]), ncol = 3)
+
+#   Se calculan los pesos utilizando la función Regress_Lin
+w <- Regress_Lin(datos, etiquetasMuestra)[[1]]
+
+#   Se calcula el error utilizando gradiente descendente estocasstico (SGD)
+listaSGD <- Logistic_Reg(c(0,0,0), datos, etiquetasMuestra, 100, 0.05)
+pesos <- listaSGD[[2]]
+
+
+plot ( x=muestra[,1], y=muestra[,2], col=etiquetasMuestra+3)
+curve(w[1]*x+w[2], add=T)
+
+Ein <-listaSGD[[2]]
+cat("Ein vale " ,Ein)
+```
+
+\newpage
+d ) Ejecutar todo el experimento definido por (a)-(c) 1000 veces (generamos 1000 muestras diferentes) y
+
+1) Calcular el valor medio de los errores $E_{in}$ de las 1000 muestras.
+
+2) Generar 1000 puntos nuevos por cada iteración y calcular con ellos el valor de $E_{out}$ en dicha iteración. Calcular el valor medio de $E_{out}$ en todas las iteraciones.
+
+```{r echo=FALSE}
+sumEin <- 0.0
+sumEout <- 0.0
+#   Se realiza el experimento 1000 veces, almacenando en sumEin y sumEout el error obtenido en cada iteracion
+for(i in 1:1000){
+  set.seed(4)
+  muestra <- simula_unif(N=1000,rango=c(-1,1))
+  
+  indiceRuido <-sample(1:1000, 1000*0.1)
+  etiquetasMuestra <- c()
+  for(j in 1:length(muestra[,1]))
+    etiquetasMuestra[j] <- f(muestra[j,1], muestra[j,2])
+
+  for(k in 1:length(indiceRuido)){
+    if((etiquetasMuestra[indiceRuido[k]]) == 1){
+      etiquetasMuestra[indiceRuido[k]] <- -1
+    } else{
+      etiquetasMuestra[indiceRuido[k]] <- 1
+    }
+  }
+  datos <- matrix(c(rep(1, length(muestra[,1])), muestra[,1], muestra[,2]), ncol = 3)
+  w <- Regress_Lin(datos, etiquetasMuestra)
+  sumEin <- sumEin + w[[2]]
+  w <- w[[3]]
+  
+  muestraTest <- simula_unif(N=1000,rango=c(-1,1))
+  etiquetasMuestraTest <- c()
+  for(p in 1:length(muestraTest[,1]))
+    etiquetasMuestraTest[p] <- f(muestraTest[p,1], muestraTest[p,2])
+  
+  sumEout <- sumEout + (1/1000)*(norm(datos%*%w - etiquetasMuestraTest ))**2
+}
+#   Se calcula la media de los Ein y Eout obtenidos 
+mEin <- (sumEin/1000)
+mEout <- (sumEout/1000)
+
+cat("Ein medio vale ",mEin,"\n")
+cat("Eout medio vale ",mEout)
+```
+
+e) Valore que tan bueno considera que es el ajuste con este modelo lineal a la vista de los valores medios obtenidos de $E_{in}$ y $E_{out}$
+
+El error mostrado es grande, ya que partimos de que la hipótesis de que los datos son separables, es falsa. Para que el ajuste sea óptimo, y por tanto los errores se minimicen, es necesario realizar transformaciones no lineales sobre la función hipótesis, para lograr que la hipótesis, antes falsa, ahora pueda cumplirse, para que la división pueda realizarse con más precisión. Al incluir el ruido del $10\%$ de los datos, hacemos que incluso teniendo un conjunto separable de datos, la separación de ambos no sea perfecta.
+Tras calcular el error, podemos afirmar que el porcentaje de aciertos es escaso. No se ha podido aprender nada del conjunto de datos.
+
+
