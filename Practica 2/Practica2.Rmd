@@ -1,0 +1,379 @@
+---
+title: "Practica 2"
+author: "Eloy Bedia & Miguel Moles"
+date: "6 de abril de 2018"
+output:
+  pdf_document
+---
+
+\section{APARTADO 1}
+**EJERCICIO 1**
+
+1. Dibujar una gráfica con la nube de puntos de salida correspondiente.
+```{r echo=FALSE}
+set.seed(2)
+## ------------------------------------------------------------------------
+# por defecto genera 2 puntos entre [0,1] de 2 dimensiones 
+
+simula_unif = function (N=2,dims=2, rango = c(0,1)){
+ m = matrix(runif(N*dims, min=rango[1], max=rango[2]),
+ nrow = N, ncol=dims, byrow=T)
+ m
+}
+
+## -----------------------------------------------------------------------
+
+# función simula_gaus(N, dim, sigma) que genera un
+# conjunto de longitud N de vectores de dimensión dim, conteniendo números 
+# aleatorios gaussianos de media 0 y varianzas dadas por el vector sigma.
+# por defecto genera 2 puntos de 2 dimensiones 
+
+simula_gaus = function(N=2,dim=2,sigma){
+
+  if (missing(sigma)) stop("Debe dar un vector de varianzas")
+  sigma = sqrt(sigma)  # para la generación se usa sd, y no la varianza
+  if(dim != length(sigma)) stop ("El numero de varianzas es distinto de la dimensión")
+  
+  simula_gauss1 = function() rnorm(dim, sd = sigma) # genera 1 muestra, con las desviaciones especificadas
+  m = t(replicate(N,simula_gauss1())) # repite N veces, simula_gauss1 y se hace la traspuesta
+  m
+}
+
+```
+
+a) Considere $N = 50$, $dim = 2$, $rango = [-50, +50]$ con $simula\_unif (N, dim, rango)$.
+
+```{r echo=FALSE}
+data_unif <- simula_unif(50, 2, c(-50,50))
+plot(x=data_unif[,1], y=data_unif[,2],xlab = 'x_axis', ylab = 'y_axis')
+```
+
+b) Considere $N = 50$, $dim = 2$ y $sigma = [5, 7]$ con $simula\_gaus(N, dim, sigma)$.
+
+```{r echo=FALSE}
+data_gaus <- simula_gaus(50, 2, c(5,7))
+plot(x=data_gaus[,1], y=data_gaus[,2],xlab = 'x_axis', ylab = 'y_axis')
+```
+
+\newpage
+
+
+**EJERCICIO 2**
+
+Con ayuda de la función $simula\_unif()$ generar una muestra de puntos 2D a los que vamos añadir una etiqueta usando el signo de la función $f (x, y) = y - ax -b$, es decir el signo de la distancia de cada punto a la recta simulada con $simula\_recta()$.
+
+```{r echo=FALSE}
+## ------------------------------------------------------------------------
+#  simula_recta(intervalo) una funcion que calcula los parámetros
+#  de una recta aleatoria, y = ax + b, que corte al cuadrado [-50,50]x[-50,50]
+#  (Para calcular la recta se simulan las coordenadas de 2 ptos dentro del 
+#  cuadrado y se calcula la recta que pasa por ellos), 
+#  se pinta o no segun el valor de parametro visible
+
+simula_recta = function (intervalo = c(-1,1), visible=F){
+  
+   ptos = simula_unif(2,2,intervalo) # se generan 2 puntos
+   a = (ptos[1,2] - ptos[2,2]) / (ptos[1,1]-ptos[2,1]) # calculo de la pendiente
+   b = ptos[1,2]-a*ptos[1,1]  # calculo del punto de corte
+
+   if (visible) {  # pinta la recta y los 2 puntos
+       if (dev.cur()==1) # no esta abierto el dispositivo lo abre con plot
+           plot(1, type="n", xlim=intervalo, ylim=intervalo)
+       points(ptos,col=3)  #pinta en verde los puntos
+       abline(b,a,col=3)   # y la recta
+   }
+   c(a,b) # devuelve el par pendiente y punto de corte
+}
+
+sign <- function(x,y,r){
+  s <- (y - r[1]*x - r[2])
+  if(s == abs(s)) return(1)
+  return (-1)
+}
+
+recta <- simula_recta()
+label_unif <- c()
+for(i in 1:length(data_unif[,1]))
+  label_unif[i] <- sign(data_unif[i,1], data_unif[i,2], recta)
+```
+
+a) Dibujar una gráfica donde los puntos muestren el resultado de su etiqueta, junto con la recta usada para ello. (Observe que todos los puntos están bien clasificados respecto de la recta)
+
+```{r echo=FALSE}
+plot(x=data_unif[,1], y=data_unif[,2], col=label_unif+3, xlab = 'x_axis', ylab = 'y_axis')
+curve(recta[1]*x+recta[2],add=TRUE)
+```
+
+b) Modifique de forma aleatoria un $10 \%$ etiquetas positivas y otro $10 \%$ de negativas y guarde los puntos con sus nuevas etiquetas. Dibuje de nuevo la gráfica anterior. (Ahora hay puntos mal clasificados respecto de la recta)
+
+```{r echo=FALSE}
+
+positive_label <- label_unif[label_unif==1]
+
+negative_label <- label_unif[label_unif==-1]
+
+positive_noise <- sample(1:length(positive_label), length(positive_label)*0.1)
+negative_noise <- sample(1:length(negative_label), length(negative_label)*0.1)
+
+noise <- c(positive_noise,negative_noise)
+
+noisy_label <- label_unif
+for(i in 1:length(noise)){
+  if(noisy_label[noise[i]] == 1)
+    noisy_label[noise[i]] <- -1
+  else
+    noisy_label[noise[i]] <- 1
+}
+
+plot(x=data_unif[,1], y=data_unif[,2], col=noisy_label+3, xlab = 'x_axis', ylab = 'y_axis')
+curve(recta[1]*x+recta[2],add=TRUE)
+```
+
+\newpage
+
+**EJERCICIO 3**
+
+3. Supongamos ahora que las siguientes funciones definen la frontera de clasificación de los puntos de la muestra en lugar de una recta
+$f (x, y) = (x - 10)^2 + (y - 20)^2 - 400$
+
+$f (x, y) = 0,5(x + 10)^2 + (y - 20)^2 - 400$
+
+$f (x, y) = 0,5(x - 10)^2 - (y + 20)^2 - 400$
+
+$f (x, y) = y - 20x^2 - 5x + 3$
+
+Visualizar el etiquetado generado en 2b junto con cada una de las gráficas de cada una de las funciones. Comparar las formas de las regiones positivas y negativas de estas nuevas
+funciones con las obtenidas en el caso de la recta ¿Son estas funciones más complejas mejores clasificadores que la función lineal? ¿En que ganan a la función lineal? Explicar el razonamiento.
+
+```{r echo = FALSE}
+## funcion para pintar la frontera de la función
+# a la que se pueden añadir puntos, y etiquetas
+
+pintar_frontera = function(f,rango=c(-50,50)) {
+   x=y=seq(rango[1],rango[2],length.out = 500)
+   z = outer(x,y,FUN=f)
+  #if (dev.cur()==1) # no esta abierto el dispositivo lo abre con plot
+          plot(x=data_unif[,1], y=data_unif[,2], col=noisy_label+3, xlab = 'x_axis', ylab = 'y_axis')
+
+   contour(x,y,z, levels = 1:20, xlim =rango, ylim=rango, xlab = "x", ylab = "y", add = T)
+}
+
+```
+
+
+``` {r echo = F}
+f1 <- function(x,y){
+  s <- ((x-10)**2+(y-20)**2-400)
+  s
+}
+
+pintar_frontera(f1)
+
+```
+
+``` {r echo = F}
+f2 <- function(x,y) {
+  s <- (0.5*(x+10)**2+(y-20)**2-400)
+  s
+}
+
+pintar_frontera(f2)
+```
+
+``` {r echo = F}
+f3 <- function(x,y){
+  s <- (0.5*(x-10)**2-(y+20)**2-400)
+  s
+}
+
+pintar_frontera(f3)
+```
+
+``` {r echo = F}
+
+
+f4 <- function(x,y){
+  s <- (y - 20*x**2-5*x+3)
+  s
+}
+
+pintar_frontera(f4)
+```
+
+
+En todos los casos anteriores, debido a la excesiva complejidad de la clase de funciones elegida $(ax^{2}+by^{2}+cx+dy+e)$, esta no es capaz de adaptarse correctamente a la forma de una recta, que es la funcion que se ha utilizado originalmente para asignarle las etiquetas a esta muestra. A causa de esto, el error dentro de la muestra es muy grande y en consecuencia también lo será fuera de la muestra
+
+
+\section{APARTADO 2}
+
+**EJERCICIO 1**
+
+1. Algoritmo Perceptron: Implementar la función $ajusta\_PLA(datos, label, max\_iter, vini)$ que calcula el hiperplano solución a un problema de clasificación binaria usando el algoritmo $PLA$. La entrada datos es una matriz donde cada item con su etiqueta está representado por una fila de la matriz, label el vector de etiquetas (cada etiqueta es un valor +1 o -1), $max\_iter$ es el número máximo de iteraciones permitidas y $vini$ el valor inicial del vector. La función devuelve los coeficientes del hiperplano.
+
+```{r echo=F}
+pasoARecta= function(w){
+      if(length(w)!= 3)
+        stop("Solo tiene sentido con 3 pesos")
+      a = -w[2]/w[3]
+      b = -w[1]/w[3]
+      c(a,b)
+}
+
+signo <- function(x){
+  if(x == 0) return(0)
+  else if(x == abs(x)) return (1)
+  return(-1)
+}
+
+``` 
+
+```{r}
+
+ajusta_PLA <- function(datos, label, max_iter, vini){
+  label[label==-1] <- 0
+  cambio <- TRUE
+  datos <- cbind(1, datos)
+  iter <- 1
+  
+  while(cambio && iter <= max_iter){
+    w <- vini
+    for(i in 1:length(label)){
+      if(signo(t(w)%*%datos[i,]) != label[i]){
+        w <- w + label[i]*datos[i,]
+      }
+    }
+    s <- abs(sum(w - vini))
+    if(s <= 10e-10)
+      cambio = FALSE
+    vini <- w
+    iter <- iter + 1
+  }
+  sol <-pasoARecta(vini)
+  list(sol, iter)
+}
+
+```
+
+
+a) Ejecutar el algoritmo $PLA$ con los datos simulados en los apartados $2a$ de la sección.1. Inicializar el algoritmo con: a) el vector cero y, b) con vectores de números aleatorios en $[0, 1]$ (10 veces). Anotar el número medio de iteraciones necesarias en ambos para converger. Valorar el resultado relacionando el punto de inicio con el número de iteraciones.
+
+```{r echo=FALSE}
+ajuste <- ajusta_PLA(data_unif, label_unif, 10e4, c(0,0,0))
+w <- ajuste[[1]]
+
+plot(x=data_unif[,1], y=data_unif[,2], col=label_unif+3, xlab = 'x_axis', ylab = 'y_axis')
+curve(w[1]*x+w[2], add = TRUE)
+
+cat("Iteraciones: ", ajuste[[2]], "Value: (", c(0,0,0),")")
+
+iter_medio <- ajuste[[2]] 
+
+values <- simula_unif(10,3)
+for(i in 1:length(values[,1])){
+  ajuste <- ajusta_PLA(data_unif,label_unif, 10e4, values[i,])
+  w <- ajuste[[1]]
+
+  plot(x=data_unif[,1], y=data_unif[,2], col=label_unif+3, xlab = 'x_axis', ylab = 'y_axis')
+  curve(w[1]*x+w[2], add = TRUE)
+  
+  cat("Iteraciones: ", ajuste[[2]], "Inicio: (", values[i,],")")
+  iter_medio <- ajuste[[2]] + iter_medio
+
+}
+
+cat("Nº Iteraciones Medio: ", iter_medio / (length(values[,1])+1))
+cat("El numero medio de iteraciones es pequeño debido a que estamos trabajando con \nun conjunto separable")
+
+
+```
+
+b) Hacer lo mismo que antes usando ahora los datos del apartado 2b de la sección.1. ¿Observa algún comportamiento diferente? En caso afirmativo diga cual y las razones para que ello ocurra.
+
+```{r echo=FALSE}
+ajuste <- ajusta_PLA(data_unif, label_unif, Inf, c(0,0,0))
+w <- ajuste[[1]]
+
+plot(x=data_unif[,1], y=data_unif[,2], col=noisy_label+3, xlab = 'x_axis', ylab = 'y_axis')
+curve(w[1]*x+w[2], add = TRUE)
+
+cat("Iteraciones: ", ajuste[[2]], "Value: (", c(0,0,0),")")
+
+iter_medio <- ajuste[[2]] 
+
+for(i in 1:length(values[,1])){
+  ajuste <- ajusta_PLA(data_unif,noisy_label, Inf, values[i,])
+  w <- ajuste[[1]]
+  
+
+  plot(x=data_unif[,1], y=data_unif[,2], col=noisy_label+3, xlab = 'x_axis', ylab = 'y_axis')
+  curve(w[1]*x+w[2], add = TRUE)
+  
+  cat("Iteraciones: ", ajuste[[2]], "Inicio: (", values[i,], ")")
+    iter_medio <- ajuste[[2]] + iter_medio
+
+
+}
+cat("Nº Iteraciones Medio: ", iter_medio / (length(values[,1])+1))
+cat("El numero medio de iteraciones es más grande debido a que estamos trabajando con \nun conjunto no separable")
+
+
+```
+
+**Ejercicio 2**
+Regresión Logística: En este ejercicio crearemos nuestra propia función objetivo f (una probabilidad en este caso) y nuestro conjunto de datos D para ver cómo funciona regresión logística. Supondremos por simplicidad que f es una probabilidad con valores 0/1 y por tanto que la etiqueta y es una función determinista de x.
+
+Consideremos $d = 2$ para que los datos sean visualizables, y sea $\chi = [0, 2]$ × $[0, 2]$ con probabilidad uniforme de elegir cada $x \chi$ .Elegir una línea en el plano que pase por $\chi$ como la frontera entre $f (x) = 1$ (donde y toma valores +1) y $f (x) = 0$ (donde y toma valores -1), para ello seleccionar dos puntos aleatorios del plano y calcular la línea que pasa por ambos. Seleccionar $N = 100$ puntos aleatorios $\{x_n\}$ de $\chi$ y evaluar las respuestas $\{y_n\}$ de todos ellos respecto de la frontera elegida.
+
+a) Implementar Regresión Logística(RL) con Gradiente Descendente Estocástico $(SGD)$ bajo las siguientes condiciones:
+Inicializar el vector de pesos con valores 0.
+Parar el algoritmo cuando $||w^{(t-1)} - w^{(t)} || < 0,01$, donde $w^{(t)}$ denota el vector de pesos al final de la época $t$. Una época es un pase completo a través de los $N$ datos.
+
+Aplicar una permutación aleatoria, 1, 2, . . ., N , en el orden de los datos antes de usarlos en cada época del algoritmo.
+Usar una tasa de aprendizaje de $mu = 0,01$
+
+
+```{r echo = FALSE}
+Logistic_Reg <- function(w, x, y, N, mu = 0.01, epsilon=10e-10){
+  x <- cbind(1, x)
+  prev_w <- c(0,0,0)
+  Error <- 1.0
+  iter <- 1
+  while(Error >= epsilon && iter < 100000 && (abs(sum(prev_w) - sum(w)) > 0.01)){
+    TrainingIndex <- sample(1:length(y), N)
+    TrainingDataPoints <- x[TrainingIndex,]
+    TrainingLabelValues <- y[TrainingIndex]
+    prev_w <- w
+    
+    Gradient <- (-TrainingLabelValues*TrainingDataPoints)/c(1+exp(TrainingLabelValues*TrainingDataPoints%*%w))
+    
+    w <- w - mu*(1/N)*colSums(Gradient)
+    Error <- colSums(log(1+ exp(-TrainingLabelValues*TrainingDataPoints%*%w)))
+    iter <- iter+1
+  }
+	sol <- list()
+	sol[[1]] <- pasoARecta(w)
+	sol[[2]] <- Error
+	sol
+}
+
+```
+
+b) Usar la muestra de datos etiquetada para encontrar nuestra solución g y estimar $E_{out}$ usando para ello un número suficientemente grande de nuevas muestras $(> 999)$.
+
+```{r echo = FALSE}
+L_w <- Logistic_Reg(c(1,1,1), data_unif, label_unif, 32)
+plot(x=data_unif[,1], y=data_unif[,2], col=label_unif+3, xlab = 'x_axis', ylab = 'y_axis')
+w <- L_w[[1]]
+E_out <- L_w[[2]]
+curve(w[1]*x+w[2], add = TRUE)
+
+data_test <- simula_unif(1000, 2, c(-50,50))
+label_test <- c()
+for(i in 1:length(data_test[,1]))
+  label_test[i] <- sign(data_test[i,1], data_test[i,2], recta)
+
+plot(x=data_test[,1], y=data_test[,2], col=label_test+3, xlab = 'x_axis', ylab = 'y_axis')
+curve(w[1]*x+w[2], add = TRUE)
+
+cat("El valor de Eout es", E_out, "\n")
+```
